@@ -50,11 +50,11 @@ data:
     <body>
         <div class="container">
             <div class="header">
-                <h1>⚙️ Admin Service</h1>
+                <h1>Admin Service</h1>
                 <p>Administrative interface for managing the nginx services</p>
             </div>
             <div class="warning">
-                <strong>⚠️ Restricted Access:</strong> This admin interface should be protected with authentication in production environments.
+                <strong>Restricted Access:</strong> This admin interface should be protected with authentication in production environments.
             </div>
             <h2>Admin Endpoints</h2>
             <div class="endpoint">

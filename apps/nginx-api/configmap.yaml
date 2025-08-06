@@ -48,7 +48,7 @@ data:
     <body>
         <div class="container">
             <div class="header">
-                <h1>🔌 API Service</h1>
+                <h1>API Service</h1>
                 <p>This is the nginx API service providing REST endpoints</p>
             </div>
             <h2>Available Endpoints</h2>

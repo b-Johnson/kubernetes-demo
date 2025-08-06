@@ -111,8 +111,8 @@ tasks:
     desc: "Setup port forwarding for local access"
     cmds:
       - echo "Setting up port forwarding..."
-      - echo "ArgoCD UI will be available at: https://localhost:8080"
-      - echo "Services will be available at: http://*.local:8081"
+      - echo "ArgoCD UI will be available at https://localhost:8080"
+      - echo "Services will be available at http://*.local:8081"
       - echo ""
       - echo "Add to /etc/hosts:"
       - echo "127.0.0.1 nginx-frontend.local"
