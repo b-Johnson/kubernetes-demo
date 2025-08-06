@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: nginx-demo-complete
+
+resources:
+- k8s/namespace.yaml
+- apps/nginx-frontend
+- apps/nginx-api
+- apps/nginx-admin
+- istio
+- monitoring
+
+commonLabels:
+  app.kubernetes.io/part-of: nginx-demo
+  app.kubernetes.io/managed-by: kustomize
+
+namespace: demo
+
+patches:
+- target:
+    kind: Deployment
+    name: nginx-frontend
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 3
+- target:
+    kind: Deployment
+    name: nginx-api
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 2
+- target:
+    kind: Deployment
+    name: nginx-admin
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 1
+
+images:
+- name: nginx
+  newTag: 1.25-alpine

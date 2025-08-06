@@ -1,0 +1,88 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: nginx-frontend-vs
+  namespace: demo
+spec:
+  hosts:
+  - nginx-frontend.local
+  gateways:
+  - nginx-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: nginx-frontend
+        port:
+          number: 80
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 5s
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: nginx-api-vs
+  namespace: demo
+spec:
+  hosts:
+  - nginx-api.local
+  gateways:
+  - nginx-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api
+    route:
+    - destination:
+        host: nginx-api
+        port:
+          number: 80
+    timeout: 10s
+    retries:
+      attempts: 2
+      perTryTimeout: 5s
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: nginx-api
+        port:
+          number: 80
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: nginx-admin-vs
+  namespace: demo
+spec:
+  hosts:
+  - nginx-admin.local
+  gateways:
+  - nginx-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /admin
+    route:
+    - destination:
+        host: nginx-admin
+        port:
+          number: 80
+    timeout: 15s
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: nginx-admin
+        port:
+          number: 80

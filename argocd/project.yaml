@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: nginx-demo-project
+  namespace: argocd
+spec:
+  description: "Project for nginx demo applications with Istio service mesh"
+  sourceRepos:
+  - 'https://github.com/b-Johnson/kubernetes-demo'
+  destinations:
+  - namespace: demo
+    server: https://kubernetes.default.svc
+  - namespace: istio-system
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  - group: networking.istio.io
+    kind: '*'
+  - group: security.istio.io
+    kind: '*'
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: '*'
+  - group: apps
+    kind: '*'
+  - group: networking.istio.io
+    kind: '*'
+  - group: security.istio.io
+    kind: '*'
+  roles:
+  - name: admin
+    description: Admin role for nginx-demo project
+    policies:
+    - p, proj:nginx-demo-project:admin, applications, *, nginx-demo-project/*, allow
+    - p, proj:nginx-demo-project:admin, repositories, *, *, allow
+    groups:
+    - nginx-demo:admin
+  - name: readonly
+    description: Read-only role for nginx-demo project
+    policies:
+    - p, proj:nginx-demo-project:readonly, applications, get, nginx-demo-project/*, allow
+    - p, proj:nginx-demo-project:readonly, applications, action/*, nginx-demo-project/*, deny
+    groups:
+    - nginx-demo:readonly

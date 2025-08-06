@@ -1,0 +1,189 @@
+version: '3'
+
+vars:
+  NAMESPACE: demo
+  ARGOCD_NAMESPACE: argocd
+  ISTIO_NAMESPACE: istio-system
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+
+  setup:
+    desc: "Complete setup of nginx services with ArgoCD and Istio"
+    cmds:
+      - task: check-tools
+      - task: create-namespace
+      - task: install-argocd
+      - task: install-istio
+      - task: deploy-apps
+      - task: setup-monitoring
+      - echo "🎉 Setup completed! Run 'task status' to check deployment status"
+
+  check-tools:
+    desc: "Check if required tools are installed"
+    cmds:
+      - kubectl version --client
+      - helm version
+      - echo "✅ All tools are available"
+
+  create-namespace:
+    desc: "Create the demo namespace with Istio injection"
+    cmds:
+      - kubectl apply -f k8s/namespace.yaml
+      - echo "✅ Namespace created with Istio injection enabled"
+
+  install-argocd:
+    desc: "Install ArgoCD if not present"
+    cmds:
+      - |
+        if ! kubectl get namespace {{.ARGOCD_NAMESPACE}} &> /dev/null; then
+          echo "📥 Installing ArgoCD..."
+          kubectl create namespace {{.ARGOCD_NAMESPACE}}
+          kubectl apply -n {{.ARGOCD_NAMESPACE}} -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n {{.ARGOCD_NAMESPACE}}
+          echo "✅ ArgoCD installed"
+        else
+          echo "✅ ArgoCD already installed"
+        fi
+
+  install-istio:
+    desc: "Install Istio if not present"
+    cmds:
+      - |
+        if ! kubectl get namespace {{.ISTIO_NAMESPACE}} &> /dev/null; then
+          echo "📥 Installing Istio..."
+          if ! command -v istioctl &> /dev/null; then
+            curl -L https://istio.io/downloadIstio | sh -
+            sudo mv istio-*/bin/istioctl /usr/local/bin/
+          fi
+          istioctl install --set values.defaultRevision=default -y
+          echo "✅ Istio installed"
+        else
+          echo "✅ Istio already installed"
+        fi
+
+  deploy-apps:
+    desc: "Deploy all ArgoCD applications"
+    cmds:
+      - kubectl apply -f argocd/project.yaml
+      - kubectl apply -f argocd/
+      - echo "✅ ArgoCD applications deployed"
+
+  setup-monitoring:
+    desc: "Setup monitoring and observability"
+    cmds:
+      - kubectl apply -f monitoring/
+      - echo "✅ Monitoring configuration applied"
+
+  status:
+    desc: "Check status of all deployments"
+    cmds:
+      - echo "📊 Checking deployment status..."
+      - echo ""
+      - echo "=== Namespaces ==="
+      - kubectl get namespaces {{.NAMESPACE}} {{.ARGOCD_NAMESPACE}} {{.ISTIO_NAMESPACE}}
+      - echo ""
+      - echo "=== ArgoCD Applications ==="
+      - kubectl get applications -n {{.ARGOCD_NAMESPACE}}
+      - echo ""
+      - echo "=== Nginx Services ==="
+      - kubectl get pods,svc -n {{.NAMESPACE}}
+      - echo ""
+      - echo "=== Istio Configuration ==="
+      - kubectl get gateway,virtualservice,destinationrule -n {{.NAMESPACE}}
+
+  logs:
+    desc: "Show logs for nginx services"
+    cmds:
+      - echo "=== Frontend Logs ==="
+      - kubectl logs -l app=nginx-frontend -n {{.NAMESPACE}} --tail=10
+      - echo ""
+      - echo "=== API Logs ==="
+      - kubectl logs -l app=nginx-api -n {{.NAMESPACE}} --tail=10
+      - echo ""
+      - echo "=== Admin Logs ==="
+      - kubectl logs -l app=nginx-admin -n {{.NAMESPACE}} --tail=10
+
+  port-forward:
+    desc: "Setup port forwarding for local access"
+    cmds:
+      - echo "Setting up port forwarding..."
+      - echo "ArgoCD UI will be available at: https://localhost:8080"
+      - echo "Services will be available at: http://*.local:8081"
+      - echo ""
+      - echo "Add to /etc/hosts:"
+      - echo "127.0.0.1 nginx-frontend.local"
+      - echo "127.0.0.1 nginx-api.local"
+      - echo "127.0.0.1 nginx-admin.local"
+      - echo ""
+      - echo "Starting port forwards..."
+      - |
+        kubectl port-forward svc/argocd-server -n {{.ARGOCD_NAMESPACE}} 8080:443 &
+        kubectl port-forward svc/istio-ingressgateway -n {{.ISTIO_NAMESPACE}} 8081:80 &
+        echo "Port forwarding active. Press Ctrl+C to stop."
+        wait
+
+  test:
+    desc: "Test service endpoints"
+    cmds:
+      - echo "🧪 Testing service endpoints..."
+      - echo ""
+      - echo "=== Frontend Health ==="
+      - kubectl exec -n {{.NAMESPACE}} deployment/nginx-frontend -- curl -s localhost/health
+      - echo ""
+      - echo "=== API Health ==="
+      - kubectl exec -n {{.NAMESPACE}} deployment/nginx-api -- curl -s localhost/api/v1/health
+      - echo ""
+      - echo "=== API Status ==="
+      - kubectl exec -n {{.NAMESPACE}} deployment/nginx-api -- curl -s localhost/api/v1/status
+      - echo ""
+      - echo "=== Admin Health ==="
+      - kubectl exec -n {{.NAMESPACE}} deployment/nginx-admin -- curl -s localhost/admin/health
+
+  clean:
+    desc: "Clean up all resources"
+    cmds:
+      - echo "🧹 Cleaning up resources..."
+      - kubectl delete -f argocd/ --ignore-not-found=true
+      - kubectl delete namespace {{.NAMESPACE}} --ignore-not-found=true
+      - echo "✅ Cleanup completed"
+
+  get-argocd-password:
+    desc: "Get ArgoCD admin password"
+    cmds:
+      - echo "ArgoCD admin password:"
+      - kubectl -n {{.ARGOCD_NAMESPACE}} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+      - echo ""
+
+  istio-dashboard:
+    desc: "Open Istio dashboard (Kiali)"
+    cmds:
+      - echo "Opening Istio dashboard..."
+      - kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/kiali.yaml
+      - kubectl port-forward svc/kiali -n {{.ISTIO_NAMESPACE}} 20001:20001
+
+  restart:
+    desc: "Restart all nginx services"
+    cmds:
+      - kubectl rollout restart deployment/nginx-frontend -n {{.NAMESPACE}}
+      - kubectl rollout restart deployment/nginx-api -n {{.NAMESPACE}}
+      - kubectl rollout restart deployment/nginx-admin -n {{.NAMESPACE}}
+      - echo "✅ All services restarted"
+
+  scale:
+    desc: "Scale services (usage: task scale -- frontend=5 api=3)"
+    cmds:
+      - |
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          for arg in {{.CLI_ARGS}}; do
+            service=$(echo $arg | cut -d'=' -f1)
+            replicas=$(echo $arg | cut -d'=' -f2)
+            kubectl scale deployment/nginx-$service --replicas=$replicas -n {{.NAMESPACE}}
+            echo "✅ Scaled nginx-$service to $replicas replicas"
+          done
+        else
+          echo "Usage: task scale -- frontend=5 api=3 admin=1"
+        fi

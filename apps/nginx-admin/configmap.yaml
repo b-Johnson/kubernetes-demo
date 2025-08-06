@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-admin-config
+  namespace: demo
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        
+        # Basic auth could be configured here in production
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+        
+        location /admin/health {
+            access_log off;
+            return 200 '{"status":"healthy","service":"nginx-admin","role":"admin"}';
+            add_header Content-Type application/json;
+        }
+        
+        location /admin/metrics {
+            access_log off;
+            return 200 '{"cpu_usage":"15%","memory_usage":"45%","requests_per_minute":150}';
+            add_header Content-Type application/json;
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-admin-html
+  namespace: demo
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Admin Service</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { background: #FF9800; color: white; padding: 20px; border-radius: 5px; }
+            .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+            .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>⚙️ Admin Service</h1>
+                <p>Administrative interface for managing the nginx services</p>
+            </div>
+            <div class="warning">
+                <strong>⚠️ Restricted Access:</strong> This admin interface should be protected with authentication in production environments.
+            </div>
+            <h2>Admin Endpoints</h2>
+            <div class="endpoint">
+                <strong>GET /admin/health</strong><br>
+                Returns admin service health status
+            </div>
+            <div class="endpoint">
+                <strong>GET /admin/metrics</strong><br>
+                Returns basic system metrics
+            </div>
+            <h2>Service Information</h2>
+            <ul>
+                <li><strong>Service:</strong> nginx-admin</li>
+                <li><strong>Namespace:</strong> demo</li>
+                <li><strong>Mesh:</strong> Istio</li>
+                <li><strong>Deployment:</strong> ArgoCD</li>
+                <li><strong>Replicas:</strong> 1 (Single instance for admin)</li>
+            </ul>
+        </div>
+    </body>
+    </html>

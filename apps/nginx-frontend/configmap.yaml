@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-frontend-config
+  namespace: demo
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+        
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-frontend-html
+  namespace: demo
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Frontend Service</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { background: #4CAF50; color: white; padding: 20px; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 Frontend Service</h1>
+                <p>This is the nginx frontend service running in Kubernetes with Istio service mesh</p>
+            </div>
+            <h2>Service Information</h2>
+            <ul>
+                <li><strong>Service:</strong> nginx-frontend</li>
+                <li><strong>Namespace:</strong> demo</li>
+                <li><strong>Mesh:</strong> Istio</li>
+                <li><strong>Deployment:</strong> ArgoCD</li>
+            </ul>
+        </div>
+    </body>
+    </html>
