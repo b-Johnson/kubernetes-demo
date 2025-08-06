@@ -14,11 +14,6 @@ spec:
       http:
         http1MaxPendingRequests: 10
         maxRequestsPerConnection: 2
-    circuitBreaker:
-      consecutiveErrors: 3
-      interval: 30s
-      baseEjectionTime: 30s
-      maxEjectionPercent: 50
   subsets:
   - name: v1
     labels:
@@ -40,11 +35,6 @@ spec:
       http:
         http1MaxPendingRequests: 20
         maxRequestsPerConnection: 5
-    circuitBreaker:
-      consecutiveErrors: 5
-      interval: 30s
-      baseEjectionTime: 30s
-      maxEjectionPercent: 50
   subsets:
   - name: v1
     labels:
@@ -66,11 +56,6 @@ spec:
       http:
         http1MaxPendingRequests: 5
         maxRequestsPerConnection: 1
-    circuitBreaker:
-      consecutiveErrors: 2
-      interval: 30s
-      baseEjectionTime: 30s
-      maxEjectionPercent: 100
   subsets:
   - name: v1
     labels:
