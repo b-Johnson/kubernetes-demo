@@ -6,6 +6,11 @@ metadata:
   labels:
     app: nginx-frontend
     service: nginx-frontend
+    app.kubernetes.io/name: nginx-frontend
+    app.kubernetes.io/instance: nginx-frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: nginx-demo
+    app.kubernetes.io/managed-by: argocd
 spec:
   ports:
   - port: 80

@@ -203,20 +203,20 @@ tasks:
         if [ -n "{{.CLI_ARGS}}" ]; then
           v1_weight=80
           v2_weight=20
-          
+
           for arg in {{.CLI_ARGS}}; do
             version=$(echo $arg | cut -d'=' -f1)
             weight=$(echo $arg | cut -d'=' -f2)
-            
+
             if [ "$version" = "v1" ]; then
               v1_weight=$weight
             elif [ "$version" = "v2" ]; then
               v2_weight=$weight
             fi
           done
-          
+
           echo "Setting traffic split: v1=$v1_weight%, v2=$v2_weight%"
-          
+
           # Create temporary virtual service with new weights
           kubectl patch virtualservice nginx-frontend-vs -n {{.NAMESPACE}} --type='json' -p='[
             {
@@ -225,12 +225,12 @@ tasks:
               "value": '$v1_weight'
             },
             {
-              "op": "replace", 
+              "op": "replace",
               "path": "/spec/http/3/route/1/weight",
               "value": '$v2_weight'
             }
           ]'
-          
+
           echo "✅ Traffic split updated successfully"
           echo "Run 'task test-routing' to verify the new distribution"
         else
@@ -242,19 +242,19 @@ tasks:
     desc: "Gradually shift traffic to v2 for canary deployment"
     cmds:
       - echo "🚀 Starting canary deployment..."
-      - echo "Step 1: 95% v1, 5% v2"
+      - echo "Step 1- 95% v1, 5% v2"
       - task traffic-split -- v1=95 v2=5
       - echo "Waiting 30 seconds..."
       - sleep 30
-      - echo "Step 2: 80% v1, 20% v2" 
+      - echo "Step 2- 80% v1, 20% v2"
       - task traffic-split -- v1=80 v2=20
       - echo "Waiting 30 seconds..."
       - sleep 30
-      - echo "Step 3: 50% v1, 50% v2"
+      - echo "Step 3- 50% v1, 50% v2"
       - task traffic-split -- v1=50 v2=50
       - echo "Waiting 30 seconds..."
       - sleep 30
-      - echo "Step 4: 20% v1, 80% v2"
+      - echo "Step 4- 20% v1, 80% v2"
       - task traffic-split -- v1=20 v2=80
       - echo "✅ Canary deployment completed!"
       - echo "💡 Run 'task traffic-split -- v1=0 v2=100' to complete migration"

@@ -6,13 +6,6 @@ resources:
 - service.yaml
 - configmap.yaml
 
-commonLabels:
-  app.kubernetes.io/name: nginx-frontend
-  app.kubernetes.io/instance: nginx-frontend
-  app.kubernetes.io/component: frontend
-  app.kubernetes.io/part-of: nginx-demo
-  app.kubernetes.io/managed-by: argocd
-
 images:
 - name: nginx
   newTag: 1.25-alpine
