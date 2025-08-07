@@ -11,6 +11,18 @@ tasks:
     cmds:
       - task --list
 
+  create-cluster:
+    desc: "Create the local kind cluster and setup environment"
+    cmds:
+      - echo "Creating local kind cluster..."
+      - kind create cluster --config kind-config.yaml
+
+  delete-cluster:
+    desc: "Delete the existing kind Kubernetes cluster"
+    cmds:
+      - echo "Deleting local kind cluster..."
+      - kind delete cluster
+
   setup:
     desc: "Complete setup of nginx services with ArgoCD and Istio"
     cmds:
@@ -19,7 +31,7 @@ tasks:
       - task: install-argocd
       - task: install-istio
       - task: deploy-apps
-      - task: setup-monitoring
+      #- task: setup-monitoring
       - echo "🎉 Setup completed! Run 'task status' to check deployment status"
 
   check-tools:

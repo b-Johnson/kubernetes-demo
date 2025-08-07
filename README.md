@@ -30,7 +30,7 @@ This project demonstrates a complete Kubernetes setup with three nginx services 
 - **Versions**: v1 (stable) and v2 (enhanced)
 - **V1 Replicas**: 3 (for high availability)
 - **V2 Replicas**: 2 (for canary testing)
-- **Features**: 
+- **Features**:
   - Custom HTML landing page
   - Health check endpoint (`/health`)
   - Istio sidecar injection
@@ -97,7 +97,7 @@ The frontend service demonstrates multiple Istio routing patterns:
 
 ### Applications Managed
 1. `nginx-frontend` - Frontend service deployment
-2. `nginx-api` - API service deployment  
+2. `nginx-api` - API service deployment
 3. `nginx-admin` - Admin service deployment
 4. `istio-config` - Istio configuration management
 
@@ -123,16 +123,72 @@ The `devbox.json` configuration includes all necessary tools:
 devbox shell
 ```
 
+## 🏠 Local Development
+
+### Cluster Management
+
+This project includes tasks for managing a local Kind (Kubernetes in Docker) cluster for development and testing:
+
+#### Create Local Cluster
+```bash
+# Create a new Kind cluster with custom configuration
+task create-cluster
+```
+
+This command:
+- Creates a local Kubernetes cluster using Kind
+- Uses a custom `kind-config.yaml` configuration
+- Sets up the cluster ready for Istio and ArgoCD installation
+
+#### Delete Local Cluster
+```bash
+# Remove the existing Kind cluster
+task delete-cluster
+```
+
+This command:
+- Completely removes the local Kind cluster
+- Cleans up all associated resources
+- Useful for starting fresh or cleanup
+
+#### Complete Setup Flow
+```bash
+# Full local development setup
+task create-cluster    # Create the cluster
+task setup             # Install ArgoCD, Istio, and deploy apps
+task port-forward      # Enable local access
+```
+
+### Development Workflow
+
+1. **Initial Setup**: `task create-cluster && task setup`
+2. **Development**: Make changes to manifests in Git
+3. **Testing**: Use `task test-routing` to verify changes
+4. **Cleanup**: `task delete-cluster` when done
+
+**Note**: The Kind cluster configuration should include any specific settings needed for Istio load balancer support and proper networking.
+
 ## 🚀 Quick Start
 
-### 1. Clone and Deploy
+### Option 1: Local Development (Recommended)
 ```bash
+# Create local Kind cluster and deploy everything
+task create-cluster
+task setup
+task port-forward
+```
+
+### Option 2: Existing Cluster
+```bash
+# Deploy to existing Kubernetes cluster
 git clone <repository-url>
 cd kubernetes-demo
 ./deploy.sh
+# OR use task runner
+task setup
 ```
 
-### 2. Access Services
+### Access Services
 
 Add to your `/etc/hosts`:
 ```
@@ -150,7 +206,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 kubectl port-forward svc/istio-ingressgateway -n istio-system 8081:80
 ```
 
-### 3. Access URLs
+### Access URLs
 - **ArgoCD UI**: https://localhost:8080 (admin/[password])
 - **Frontend**: http://nginx-frontend.local:8081
 - **Frontend V2 Path**: http://nginx-frontend.local:8081/v2
@@ -158,7 +214,7 @@ kubectl port-forward svc/istio-ingressgateway -n istio-system 8081:80
 - **API**: http://nginx-api.local:8081
 - **Admin**: http://nginx-admin.local:8081
 
-### 4. Test Advanced Routing
+### Test Advanced Routing
 ```bash
 # Test all routing patterns
 task test-routing
@@ -208,7 +264,7 @@ kubernetes-demo/
 
 #### Load Balancing
 - **Frontend**: `LEAST_CONN` - Distributes to least connected pods
-- **API**: `ROUND_ROBIN` - Even distribution across pods  
+- **API**: `ROUND_ROBIN` - Even distribution across pods
 - **Admin**: `ROUND_ROBIN` - Simple round-robin for single pod
 
 #### Circuit Breaker
@@ -252,7 +308,77 @@ Jaeger integration provides:
 - Performance bottleneck identification
 - Error root cause analysis
 
-## 🐛 Troubleshooting
+## � Task Reference
+
+The project includes a comprehensive Taskfile with commands for managing the entire lifecycle:
+
+### Cluster Management
+```bash
+task create-cluster    # Create local Kind cluster
+task delete-cluster    # Delete local Kind cluster
+```
+
+### Setup and Deployment
+```bash
+task setup             # Complete setup (ArgoCD + Istio + Apps)
+task check-tools       # Verify required tools are installed
+task create-namespace  # Create demo namespace with Istio injection
+task install-argocd    # Install ArgoCD
+task install-istio     # Install Istio service mesh
+task deploy-apps       # Deploy all ArgoCD applications
+```
+
+### Monitoring and Status
+```bash
+task status            # Check status of all deployments
+task logs              # Show logs for all nginx services
+task get-argocd-password  # Get ArgoCD admin password
+```
+
+### Service Management
+```bash
+task test              # Test all service endpoints
+task test-routing      # Test advanced routing rules
+task restart           # Restart all nginx services
+task scale -- frontend=5 api=3  # Scale services
+```
+
+### Traffic Management
+```bash
+task traffic-split -- v1=60 v2=40  # Adjust traffic split
+task canary-deploy     # Gradual traffic shift to v2
+```
+
+### Access and Networking
+```bash
+task port-forward      # Setup port forwarding for local access
+task istio-dashboard   # Open Kiali dashboard
+```
+
+### Cleanup
+```bash
+task clean            # Clean up all resources
+```
+
+### Usage Examples
+```bash
+# Full local development cycle
+task create-cluster && task setup
+
+# Monitor deployment
+task status
+
+# Test routing capabilities
+task test-routing
+
+# Perform canary deployment
+task canary-deploy
+
+# Cleanup when done
+task delete-cluster
+```
+
+## �🐛 Troubleshooting
 
 ### Common Issues
 
@@ -260,7 +386,7 @@ Jaeger integration provides:
    ```bash
    # Check application status
    kubectl get applications -n argocd
-   
+
    # View sync status
    argocd app get nginx-frontend
    ```
@@ -269,7 +395,7 @@ Jaeger integration provides:
    ```bash
    # Verify namespace labeling
    kubectl get namespace demo --show-labels
-   
+
    # Check pod sidecar status
    kubectl get pods -n demo -o jsonpath='{.items[*].spec.containers[*].name}'
    ```
@@ -278,7 +404,7 @@ Jaeger integration provides:
    ```bash
    # Check gateway status
    kubectl get gateway -n demo
-   
+
    # Verify virtual service configuration
    kubectl get virtualservice -n demo -o yaml
    ```
