@@ -9,14 +9,56 @@ spec:
   gateways:
   - nginx-gateway
   http:
+  # Header-based routing: Route traffic with version=v2 header to v2
+  - match:
+    - headers:
+        version:
+          exact: v2
+    route:
+    - destination:
+        host: nginx-frontend
+        subset: v2
+        port:
+          number: 80
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+  # Path-based routing: Route /v2 and /beta paths to v2
+  - match:
+    - uri:
+        prefix: /v2
+    route:
+    - destination:
+        host: nginx-frontend
+        subset: v2
+        port:
+          number: 80
+  - match:
+    - uri:
+        prefix: /beta
+    route:
+    - destination:
+        host: nginx-frontend
+        subset: v2
+        port:
+          number: 80
+  # Weight-based routing: Split remaining traffic 80% v1, 20% v2
   - match:
     - uri:
         prefix: /
     route:
     - destination:
         host: nginx-frontend
+        subset: v1
         port:
           number: 80
+      weight: 80
+    - destination:
+        host: nginx-frontend
+        subset: v2
+        port:
+          number: 80
+      weight: 20
     fault:
       delay:
         percentage:

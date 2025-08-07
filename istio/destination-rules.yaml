@@ -18,6 +18,18 @@ spec:
   - name: v1
     labels:
       version: v1
+  - name: v2
+    labels:
+      version: v2
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      connectionPool:
+        tcp:
+          maxConnections: 15
+        http:
+          http1MaxPendingRequests: 15
+          maxRequestsPerConnection: 3
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule

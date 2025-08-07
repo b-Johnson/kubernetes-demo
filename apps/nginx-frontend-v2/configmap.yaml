@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-frontend-v2-config
+  namespace: demo
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+        
+        location /health {
+            access_log off;
+            return 200 "healthy-v2\n";
+            add_header Content-Type text/plain;
+        }
+        
+        location /v2 {
+            root /usr/share/nginx/html;
+            try_files /v2.html =404;
+        }
+        
+        location /beta {
+            root /usr/share/nginx/html;
+            try_files /beta.html =404;
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-frontend-v2-html
+  namespace: demo
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Frontend Service V2</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { background: #9C27B0; color: white; padding: 20px; border-radius: 5px; }
+            .feature { background: #f3e5f5; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #9C27B0; }
+            .routing-info { background: #e8f5e8; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Frontend Service V2</h1>
+                <p>Enhanced nginx frontend service with advanced routing capabilities</p>
+            </div>
+            <div class="routing-info">
+                <h3>Active Routing Rules</h3>
+                <p>This service demonstrates multiple Istio routing patterns:</p>
+                <ul>
+                    <li><strong>Weight-based:</strong> Traffic split between v1 and v2</li>
+                    <li><strong>Path-based:</strong> /v2 and /beta paths route to v2</li>
+                    <li><strong>Header-based:</strong> version=v2 header routes to v2</li>
+                </ul>
+            </div>
+            <div class="feature">
+                <h3>New Features in V2</h3>
+                <ul>
+                    <li>Enhanced UI with purple theme</li>
+                    <li>Dedicated /v2 and /beta endpoints</li>
+                    <li>Advanced routing demonstrations</li>
+                    <li>Improved performance metrics</li>
+                </ul>
+            </div>
+            <h2>Service Information</h2>
+            <ul>
+                <li><strong>Service:</strong> nginx-frontend-v2</li>
+                <li><strong>Version:</strong> v2</li>
+                <li><strong>Namespace:</strong> demo</li>
+                <li><strong>Mesh:</strong> Istio</li>
+                <li><strong>Deployment:</strong> ArgoCD</li>
+                <li><strong>Routing:</strong> Weight + Path + Header based</li>
+            </ul>
+        </div>
+    </body>
+    </html>
+  v2.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>V2 Specific Page</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f3e5f5; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { background: #9C27B0; color: white; padding: 20px; border-radius: 5px; text-align: center; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>V2 Path-Based Routing</h1>
+                <p>You accessed the /v2 path - routed to nginx-frontend-v2</p>
+            </div>
+            <p>This page demonstrates path-based routing in Istio. The /v2 path specifically routes to the v2 service.</p>
+            <a href="/">← Back to main page</a>
+        </div>
+    </body>
+    </html>
+  beta.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Beta Features</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #fff3e0; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .header { background: #FF9800; color: white; padding: 20px; border-radius: 5px; text-align: center; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Beta Features</h1>
+                <p>You accessed the /beta path - experimental features</p>
+            </div>
+            <p>This page shows beta features available in the v2 service via path-based routing.</p>
+            <ul>
+                <li>Advanced caching</li>
+                <li>Real-time metrics</li>
+                <li>A/B testing capabilities</li>
+            </ul>
+            <a href="/">← Back to main page</a>
+        </div>
+    </body>
+    </html>

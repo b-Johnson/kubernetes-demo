@@ -7,6 +7,7 @@ metadata:
 resources:
 - k8s/namespace.yaml
 - apps/nginx-frontend
+- apps/nginx-frontend-v2
 - apps/nginx-api
 - apps/nginx-admin
 - istio

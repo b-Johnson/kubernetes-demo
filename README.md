@@ -27,12 +27,33 @@ This project demonstrates a complete Kubernetes setup with three nginx services 
 
 ### 🎨 Frontend Service (`nginx-frontend`)
 - **Purpose**: User-facing web interface
-- **Replicas**: 3 (for high availability)
+- **Versions**: v1 (stable) and v2 (enhanced)
+- **V1 Replicas**: 3 (for high availability)
+- **V2 Replicas**: 2 (for canary testing)
 - **Features**: 
   - Custom HTML landing page
   - Health check endpoint (`/health`)
   - Istio sidecar injection
   - Circuit breaker protection
+  - **Advanced Routing**: Weight, path, and header-based routing
+
+### 🔀 Advanced Routing Capabilities
+The frontend service demonstrates multiple Istio routing patterns:
+
+#### Weight-Based Routing
+- **Default Split**: 80% traffic to v1, 20% traffic to v2
+- **Use Case**: Canary deployments and A/B testing
+- **Adjustment**: Use `task traffic-split -- v1=60 v2=40`
+
+#### Path-Based Routing
+- **`/v2` path**: Always routes to v2 service
+- **`/beta` path**: Routes to v2 for beta features
+- **Use Case**: Feature-specific routing and testing
+
+#### Header-Based Routing
+- **`version: v2` header**: Forces routing to v2
+- **`version: v1` header**: Forces routing to v1
+- **Use Case**: Developer testing and user segmentation
 
 ### 🔌 API Service (`nginx-api`)
 - **Purpose**: REST API endpoints
@@ -132,8 +153,28 @@ kubectl port-forward svc/istio-ingressgateway -n istio-system 8081:80
 ### 3. Access URLs
 - **ArgoCD UI**: https://localhost:8080 (admin/[password])
 - **Frontend**: http://nginx-frontend.local:8081
+- **Frontend V2 Path**: http://nginx-frontend.local:8081/v2
+- **Frontend Beta Path**: http://nginx-frontend.local:8081/beta
 - **API**: http://nginx-api.local:8081
 - **Admin**: http://nginx-admin.local:8081
+
+### 4. Test Advanced Routing
+```bash
+# Test all routing patterns
+task test-routing
+
+# Manual routing tests
+curl http://nginx-frontend.local:8081                    # Weight-based (80/20 split)
+curl http://nginx-frontend.local:8081/v2                 # Path-based to v2
+curl http://nginx-frontend.local:8081/beta               # Path-based to v2
+curl -H "version: v2" http://nginx-frontend.local:8081   # Header-based to v2
+
+# Adjust traffic split
+task traffic-split -- v1=50 v2=50
+
+# Canary deployment
+task canary-deploy
+```
 
 ## 📁 Project Structure
 
