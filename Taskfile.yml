@@ -178,6 +178,48 @@ tasks:
       - kubectl -n {{.ARGOCD_NAMESPACE}} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
       - echo ""
 
+  add-git-repo:
+    desc: "Add a Git repository to ArgoCD (usage: task add-git-repo -- https://github.com/user/repo.git username token)"
+    cmds:
+      - |
+        if [ $# -lt 3 ]; then
+          echo "Usage: task add-git-repo -- <repo-url> <username> <token-or-password>"
+          echo "Example: task add-git-repo -- https://github.com/user/repo.git myuser ghp_token123"
+          exit 1
+        fi
+        
+        REPO_URL="{{index .CLI_ARGS 0}}"
+        USERNAME="{{index .CLI_ARGS 1}}"
+        PASSWORD="{{index .CLI_ARGS 2}}"
+        
+        echo "Adding repository: $REPO_URL"
+        
+        kubectl create secret generic "repo-$(echo $REPO_URL | sed 's/.*\///g' | sed 's/\.git$//')" \
+          --from-literal=type=git \
+          --from-literal=url="$REPO_URL" \
+          --from-literal=username="$USERNAME" \
+          --from-literal=password="$PASSWORD" \
+          --namespace {{.ARGOCD_NAMESPACE}} \
+          --dry-run=client -o yaml | kubectl apply -f -
+        
+        kubectl label secret "repo-$(echo $REPO_URL | sed 's/.*\///g' | sed 's/\.git$//')" \
+          -n {{.ARGOCD_NAMESPACE}} argocd.argoproj.io/secret-type=repository
+        
+        echo "✅ Repository credentials added successfully"
+
+  list-git-repos:
+    desc: "List all Git repositories configured in ArgoCD"
+    cmds:
+      - echo "📋 ArgoCD Repository Secrets:"
+      - kubectl get secrets -n {{.ARGOCD_NAMESPACE}} -l argocd.argoproj.io/secret-type=repository -o custom-columns="NAME:.metadata.name,URL:.data.url" | while read name url; do
+          if [ "$name" != "NAME" ]; then
+            decoded_url=$(echo "$url" | base64 -d 2>/dev/null || echo "Unable to decode")
+            echo "  $name -> $decoded_url"
+          else
+            echo "  $name -> $url"
+          fi
+        done
+
   istio-dashboard:
     desc: "Open Istio dashboard (Kiali)"
     cmds:

@@ -285,6 +285,171 @@ All applications configured with:
 - **History Limit**: 3 revisions retained
 - **Health Checks**: Kubernetes-native health monitoring
 
+## 🔐 Git Repository Authentication
+
+For private repositories, ArgoCD requires authentication credentials. This project includes comprehensive examples for all authentication methods.
+
+### SSH Key Authentication (Recommended)
+
+SSH keys provide the most secure and convenient method for Git authentication.
+
+#### 1. Generate SSH Key Pair
+```bash
+# Generate a new SSH key specifically for ArgoCD
+ssh-keygen -t ed25519 -f ~/.ssh/argocd_key -C "argocd@kubernetes-demo"
+
+# Or use RSA if ed25519 is not supported
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/argocd_rsa -C "argocd@kubernetes-demo"
+```
+
+#### 2. Add Public Key to Git Provider
+
+**GitHub:**
+1. Copy the public key: `cat ~/.ssh/argocd_key.pub`
+2. Go to GitHub Settings → SSH and GPG keys
+3. Click "New SSH key" and paste the public key
+4. Give it a descriptive title like "ArgoCD Kubernetes Demo"
+
+**GitLab:**
+1. Copy the public key: `cat ~/.ssh/argocd_key.pub`
+2. Go to GitLab Preferences → SSH Keys
+3. Paste the key and add a descriptive title
+
+**Bitbucket:**
+1. Copy the public key: `cat ~/.ssh/argocd_key.pub`
+2. Go to Bitbucket Settings → SSH Keys
+3. Add the key with a descriptive label
+
+#### 3. Create ArgoCD Repository Secret
+```bash
+# Create the secret with your private key
+kubectl create secret generic private-repo-ssh \
+  --from-file=sshPrivateKey=~/.ssh/argocd_key \
+  --from-literal=url=git@github.com:your-org/your-private-repo.git \
+  --namespace argocd
+
+# Label the secret for ArgoCD recognition
+kubectl label secret private-repo-ssh \
+  --namespace argocd \
+  argocd.argoproj.io/secret-type=repository
+```
+
+#### 4. Update ArgoCD Applications
+After adding the repository secret, update your ArgoCD application manifests to reference the private repository:
+
+```yaml
+# Example: argocd/nginx-frontend-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-frontend
+  namespace: argocd
+spec:
+  source:
+    repoURL: git@github.com:your-org/your-private-repo.git  # Private repo URL
+    targetRevision: HEAD
+    path: apps/nginx-frontend
+  # ... rest of configuration
+```
+
+### Alternative Authentication Methods
+
+#### HTTPS with Personal Access Token
+```bash
+# Use the convenience task
+task add-git-repo -- https://github.com/your-org/private-repo.git your-username ghp_your_token_here
+
+# Or create manually
+kubectl create secret generic private-repo-https \
+  --from-literal=type=git \
+  --from-literal=url=https://github.com/your-org/private-repo.git \
+  --from-literal=username=your-username \
+  --from-literal=password=ghp_your_personal_access_token \
+  --namespace argocd
+
+kubectl label secret private-repo-https \
+  --namespace argocd \
+  argocd.argoproj.io/secret-type=repository
+```
+
+#### GitHub App Authentication (Enterprise)
+For organizations using GitHub Apps, see the complete example in `argocd/repository-credentials.yaml`.
+
+### Git Repository Management
+
+#### List Configured Repositories
+```bash
+# View all configured Git repositories
+task list-git-repos
+```
+
+#### Verify Repository Access
+```bash
+# Check if ArgoCD can access the repository
+kubectl logs -n argocd deployment/argocd-repo-server | grep -i "git"
+
+# Test SSH connection from your machine
+ssh -T git@github.com -i ~/.ssh/argocd_key
+```
+
+### Troubleshooting Git Authentication
+
+#### Common Issues
+
+1. **SSH Key Permission Issues**
+   ```bash
+   # Fix SSH key permissions
+   chmod 600 ~/.ssh/argocd_key
+   chmod 644 ~/.ssh/argocd_key.pub
+   ```
+
+2. **ArgoCD Not Recognizing Repository**
+   ```bash
+   # Verify secret exists and has correct labels
+   kubectl get secrets -n argocd -l argocd.argoproj.io/secret-type=repository
+   
+   # Check secret content
+   kubectl describe secret private-repo-ssh -n argocd
+   ```
+
+3. **Repository Sync Failures**
+   ```bash
+   # Check ArgoCD application status
+   kubectl get applications -n argocd
+   
+   # View detailed application information
+   kubectl describe application nginx-frontend -n argocd
+   ```
+
+4. **SSH Host Key Verification**
+   If you encounter SSH host key verification issues, you may need to add the Git provider's host key:
+   ```bash
+   # Add GitHub's host key (if needed)
+   kubectl create configmap ssh-known-hosts \
+     --from-literal=ssh_known_hosts="github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==" \
+     --namespace argocd
+   ```
+
+### Security Best Practices
+
+1. **Dedicated SSH Keys**: Use separate SSH keys for ArgoCD, not your personal keys
+2. **Key Rotation**: Regularly rotate SSH keys and update the secrets
+3. **Minimal Permissions**: Grant only the minimum repository permissions needed
+4. **Monitor Access**: Regularly audit which repositories ArgoCD has access to
+5. **Secret Management**: Consider using external secret management tools like External Secrets Operator
+
+### Repository Examples
+
+The `argocd/repository-credentials.yaml` file contains complete examples for:
+- SSH key authentication
+- HTTPS with personal access tokens  
+- GitHub App authentication for enterprise scenarios
+
+Apply any of these examples after customizing with your credentials:
+```bash
+kubectl apply -f argocd/repository-credentials.yaml
+```
+
 ## 📊 Monitoring and Observability
 
 ### Metrics Available
