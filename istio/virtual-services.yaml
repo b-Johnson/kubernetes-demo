@@ -22,6 +22,7 @@ spec:
     retries:
       attempts: 2
       perTryTimeout: 5s
+---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
