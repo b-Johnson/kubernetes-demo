@@ -1,3 +1,27 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: dynamic-service-router
+  namespace: demo
+spec:
+  hosts:
+  - "*.local"
+  gateways:
+  - nginx-gateway
+  http:
+  - match:
+    - authority:
+        regex: "([a-z0-9-]+)\\.local"
+    route:
+    - destination:
+        host: "{{authority}}"
+        port:
+          number: 80
+    timeout: 10s
+    retries:
+      attempts: 2
+      perTryTimeout: 5s
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
